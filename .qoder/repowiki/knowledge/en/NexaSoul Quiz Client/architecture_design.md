@@ -1,0 +1,5 @@
+- Entry point: `src/main.jsx` bootstraps the React app with `BrowserRouter`.
+- Routing: `src/App.jsx` defines client-side routes for Landing, Register, Quiz, Results, Review, Leaderboard, and Admin pages.
+- API Layer: `src/api/client.js` provides a centralized Axios instance with grouped endpoints (`quizApi`, `leaderboardApi`, `adminApi`) and environment-based base URL configuration.
+- Component Structure: Modular UI components in `src/components/` (Navbar, ProgressBar, Timer, etc.) are composed by page-level containers in `src/pages/`.
+- State Management: Relies on React hooks (`useState`, `useEffect`, `useRef`) and `sessionStorage` for transient user session data (e.g., registration details).

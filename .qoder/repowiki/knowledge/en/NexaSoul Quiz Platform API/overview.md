@@ -1,0 +1,1 @@
+Express-based REST API managing weekly quiz challenges, submissions, leaderboards, and admin operations with MongoDB persistence.

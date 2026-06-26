@@ -1,0 +1,3 @@
+- Route handlers wrap all async operations in try/catch blocks, returning JSON error responses with `error.message`.
+- Admin-only endpoints enforce authentication via a shared middleware function applied at the router level using `router.use(adminAuth)`.
+- Mongoose models are exported as default exports and imported without file extensions in some contexts, though entry points use `.js` extensions for ESM compatibility.

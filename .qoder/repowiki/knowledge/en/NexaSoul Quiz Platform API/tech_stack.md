@@ -1,0 +1,1 @@
+Uses Mongoose ODM for MongoDB access; xlsx library for potential Excel import/export (referenced in dependencies); ESM modules enabled via `"type": "module"` in package.json.

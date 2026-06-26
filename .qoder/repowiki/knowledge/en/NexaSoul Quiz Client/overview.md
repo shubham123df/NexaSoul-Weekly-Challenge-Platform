@@ -1,0 +1,1 @@
+A React-based single-page application for the NexaSoul weekly quiz challenge, featuring real-time quiz participation, leaderboard tracking, and administrative management.
