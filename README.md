@@ -2,6 +2,11 @@
 
 Interactive web platform for NexaSoul's weekly engagement initiatives — starting with the **Week 1 Frontend Trivia Challenge**.
 
+## Recent Fixes
+
+- **Fixed Timer Bug**: The 20-minute timer now properly starts when the quiz begins and counts down correctly
+- **Fixed Question Navigation**: Quiz now automatically advances to the next question after selecting an answer
+
 ## Features
 
 - **Quiz Landing Page** — NexaSoul blue-green branding, scoring rules, top performers preview
