@@ -1,0 +1,2 @@
+- Seed initial quiz questions via `npm run seed` (executes `seed/seedQuestions.js`).
+- Development mode with auto-reload using `npm run dev` (`node --watch index.js`).

@@ -1,0 +1,4 @@
+- Entry point `index.js` initializes Express, connects to MongoDB via Mongoose, and mounts four route modules (`/api/quiz`, `/api/admin`, `/api/leaderboard`, `/api/analytics`).
+- Data layer uses Mongoose models (`Quiz.js`, `Submission.js`) for schema definition and validation.
+- Admin routes are protected by a shared middleware (`adminAuth.js`) that validates a header-based secret.
+- Business logic (scoring, ranking, deadline checks) is embedded directly in route handlers rather than extracted into separate service layers.

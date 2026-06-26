@@ -1,0 +1,1 @@
+React 18 with Vite build tool, Tailwind CSS for styling, Framer Motion for animations, and React Router DOM v7 for navigation. Axios is used for HTTP requests.

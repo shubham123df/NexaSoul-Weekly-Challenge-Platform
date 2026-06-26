@@ -1,0 +1,3 @@
+- API endpoints are organized into logical groups (quiz, leaderboard, admin) within a single centralized client module using Axios instances.
+- Page components consistently use React hooks for local state management and side effects, avoiding external state management libraries.
+- UI components leverage Tailwind CSS utility classes combined with custom theme extensions (e.g., `nexa-blue`, `glass-card`) for consistent styling.
