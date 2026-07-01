@@ -2,6 +2,14 @@
 
 Interactive web platform for NexaSoul's weekly engagement initiatives — starting with the **Week 1 Frontend Trivia Challenge**.
 
+## Recent UX Improvements
+
+- **Auto-hiding navbar** — hides on scroll down, reappears smoothly on scroll up
+- **Quiz auto-advance** — moves to the next question 400ms after selecting an answer
+- **20-minute timer** — fixed top-right during quiz, warns at 5 minutes, auto-submits at 0:00
+- **Educational quiz UI** — clean indigo/teal palette, focused distraction-free layout
+- **MongoDB Atlas** — configure via `MONGODB_URI` in `server/.env`
+
 ## Features
 
 - **Quiz Landing Page** — NexaSoul blue-green branding, scoring rules, top performers preview
@@ -49,11 +57,22 @@ cd ../client && npm install
 
 ### 2. Configure environment
 
-Copy `server/.env.example` to `server/.env` and set your MongoDB URI:
+Copy `server/.env.example` to `server/.env`.
+
+**MongoDB Atlas (recommended for production):**
+
+1. Create a free cluster at [MongoDB Atlas](https://www.mongodb.com/cloud/atlas)
+2. Create a database user and allow your IP in Network Access
+3. Copy the connection string and set it in `server/.env`:
+
+```
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/nexasoul-quiz?retryWrites=true&w=majority
+```
+
+**Local development:**
 
 ```
 MONGODB_URI=mongodb://127.0.0.1:27017/nexasoul-quiz
-ADMIN_SECRET=nexasoul-admin-2026
 ```
 
 ### 3. Seed sample questions

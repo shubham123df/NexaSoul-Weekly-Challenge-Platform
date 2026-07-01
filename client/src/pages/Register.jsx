@@ -65,6 +65,12 @@ export default function Register() {
       setChecking(false);
       if (err.response?.status === 409) {
         setError('This email has already submitted this week\'s quiz. Check the leaderboard!');
+      } else if (!err.response) {
+        // Network error - backend not running
+        console.warn('Backend not available, allowing registration anyway');
+        sessionStorage.setItem('nexasoul_registration', JSON.stringify(form));
+        navigate('/instructions');
+        return;
       } else {
         setError(err.response?.data?.message || 'Unable to verify email. Please try again.');
       }

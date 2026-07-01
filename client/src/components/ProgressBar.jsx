@@ -1,17 +1,18 @@
 import { motion } from 'framer-motion';
 
-export default function ProgressBar({ current, total }) {
+export default function ProgressBar({ current, total, variant = 'default' }) {
   const percent = total ? (current / total) * 100 : 0;
+  const isEdu = variant === 'edu';
 
   return (
     <div className="w-full">
-      <div className="flex justify-between text-xs text-nexa-muted mb-2">
+      <div className={`flex justify-between text-xs mb-2 ${isEdu ? 'text-slate-500' : 'text-nexa-muted'}`}>
         <span>Question {current} of {total}</span>
-        <span>{Math.round(percent)}%</span>
+        <span className={isEdu ? 'font-semibold text-indigo-600' : ''}>{Math.round(percent)}%</span>
       </div>
-      <div className="h-2 bg-nexa-border rounded-full overflow-hidden">
+      <div className={`h-2.5 rounded-full overflow-hidden ${isEdu ? 'bg-slate-200' : 'bg-nexa-border'}`}>
         <motion.div
-          className="h-full bg-nexa-gradient-h rounded-full"
+          className={`h-full rounded-full ${isEdu ? 'bg-gradient-to-r from-indigo-500 to-teal-500' : 'bg-nexa-gradient-h'}`}
           initial={{ width: 0 }}
           animate={{ width: `${percent}%` }}
           transition={{ duration: 0.5, ease: 'easeOut' }}

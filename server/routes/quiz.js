@@ -1,6 +1,6 @@
 import express from 'express';
-import Quiz from '../models/Quiz.js';
-import Submission from '../models/Submission.js';
+import * as quizQueries from '../models/quizQueries.js';
+import * as submissionQueries from '../models/submissionQueries.js';
 
 const router = express.Router();
 
@@ -12,7 +12,7 @@ function calculateBonus(timeTakenSeconds) {
 
 router.get('/active', async (req, res) => {
   try {
-    const quiz = await Quiz.findOne({ isActive: true }).select('-questions.correctAnswer -questions.explanation');
+    const quiz = await quizQueries.getActiveQuiz();
     if (!quiz) {
       return res.status(404).json({ message: 'No active quiz available' });
     }
@@ -32,13 +32,13 @@ router.get('/active/check-email', async (req, res) => {
       return res.status(400).json({ message: 'Valid email is required' });
     }
 
-    const quiz = await Quiz.findOne({ isActive: true });
-    if (!quiz) {
+    const result = await submissionQueries.checkEmailForActiveQuiz(email.toLowerCase());
+    
+    if (result.noActiveQuiz) {
       return res.status(404).json({ message: 'No active quiz available' });
     }
-
-    const existing = await Submission.findOne({ quizId: quiz._id, email: email.toLowerCase() });
-    if (existing) {
+    
+    if (result.exists) {
       return res.status(409).json({ message: 'This email has already submitted this week\'s quiz' });
     }
 
@@ -50,7 +50,7 @@ router.get('/active/check-email', async (req, res) => {
 
 router.get('/:id', async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id).select('-questions.correctAnswer -questions.explanation');
+    const quiz = await quizQueries.getQuizById(req.params.id);
     if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
     res.json(quiz);
   } catch (error) {
@@ -60,7 +60,7 @@ router.get('/:id', async (req, res) => {
 
 router.post('/:id/submit', async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id);
+    const quiz = await quizQueries.getFullQuizById(req.params.id);
     if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
     if (!quiz.isActive) return res.status(403).json({ message: 'Quiz is not active' });
     if (quiz.submissionDeadline && new Date() > quiz.submissionDeadline) {
@@ -81,13 +81,13 @@ router.post('/:id/submit', async (req, res) => {
       return res.status(400).json({ message: 'Please enter a valid 10-digit mobile number' });
     }
 
-    const existing = await Submission.findOne({ quizId: quiz._id, $or: [{ uid }, { email: email.toLowerCase() }] });
-    if (existing) {
+    const isDuplicate = await submissionQueries.checkDuplicateSubmission(quiz.id, uid, email);
+    if (isDuplicate) {
       return res.status(409).json({ message: 'You have already submitted this quiz' });
     }
 
     const processedAnswers = answers.map((answer) => {
-      const question = quiz.questions[answer.questionIndex];
+      const question = quiz.questions.find(q => q.questionNumber === answer.questionIndex + 1);
       const isCorrect = question && answer.selectedOption === question.correctAnswer;
       const bonusPoints = isCorrect ? calculateBonus(answer.timeTakenSeconds || 0) : 0;
       const pointsEarned = isCorrect ? 10 + bonusPoints : 0;
@@ -109,36 +109,31 @@ router.post('/:id/submit', async (req, res) => {
       ? Math.round((correctCount / processedAnswers.length) * 100)
       : 0;
 
-    const submission = await Submission.create({
-      quizId: quiz._id,
-      name,
-      uid,
-      email,
-      mobile,
-      department,
-      year,
-      answers: processedAnswers,
-      totalScore,
-      correctCount,
-      wrongCount,
-      accuracy,
-      timeTakenSeconds: timeTakenSeconds || 0,
-    });
+    const submission = await submissionQueries.createSubmission(
+      {
+        quizId: quiz.id,
+        name,
+        uid,
+        email,
+        mobile,
+        department,
+        year,
+        totalScore,
+        correctCount,
+        wrongCount,
+        accuracy,
+        timeTakenSeconds: timeTakenSeconds || 0,
+      },
+      processedAnswers
+    );
 
     let rank = null;
     if (quiz.leaderboardEnabled) {
-      const betterCount = await Submission.countDocuments({
-        quizId: quiz._id,
-        $or: [
-          { totalScore: { $gt: submission.totalScore } },
-          { totalScore: submission.totalScore, timeTakenSeconds: { $lt: submission.timeTakenSeconds } },
-        ],
-      });
-      rank = betterCount + 1;
+      rank = await submissionQueries.getSubmissionRank(quiz.id, totalScore, timeTakenSeconds || 0);
     }
 
     res.status(201).json({
-      submissionId: submission._id,
+      submissionId: submission.id,
       totalScore,
       accuracy,
       timeTakenSeconds: submission.timeTakenSeconds,
@@ -154,16 +149,18 @@ router.post('/:id/submit', async (req, res) => {
 
 router.get('/:id/review/:submissionId', async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.id);
-    const submission = await Submission.findById(req.params.submissionId);
+    const quiz = await quizQueries.getFullQuizById(req.params.id);
+    const submission = await submissionQueries.getSubmissionById(req.params.submissionId);
     if (!quiz || !submission) return res.status(404).json({ message: 'Not found' });
 
-    const review = quiz.questions.map((q, index) => {
-      const userAnswer = submission.answers.find((a) => a.questionIndex === index);
+    const submissionAnswers = await submissionQueries.getSubmissionAnswers(submission.id);
+
+    const review = quiz.questions.map((q) => {
+      const userAnswer = submissionAnswers.find((a) => a.questionIndex === q.questionNumber - 1);
       return {
-        questionNumber: index + 1,
+        questionNumber: q.questionNumber,
         questionText: q.questionText,
-        options: q.options,
+        options: [q.optionA, q.optionB, q.optionC, q.optionD],
         correctAnswer: q.correctAnswer,
         selectedOption: userAnswer?.selectedOption ?? null,
         isCorrect: userAnswer?.isCorrect ?? false,

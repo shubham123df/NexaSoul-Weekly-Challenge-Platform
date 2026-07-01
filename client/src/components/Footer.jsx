@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Globe, Home, Trophy, Shield, Rocket } from 'lucide-react';
+import { Globe, Home, Trophy, Rocket } from 'lucide-react';
 import LogoBar from './LogoBar';
 import { useQuiz } from '../context/QuizContext';
 
@@ -89,7 +89,6 @@ const socialLinks = [
 const navLinks = [
   { to: '/', label: 'Home', icon: Home },
   { to: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-  { to: '/admin', label: 'Admin', icon: Shield },
   { to: '/register', label: 'Join Challenge', icon: Rocket },
 ];
 

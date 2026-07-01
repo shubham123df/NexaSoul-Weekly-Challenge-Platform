@@ -18,6 +18,19 @@
     background-attachment: fixed;
   }
 
+  /* Hide navbar and footer when admin submission modal is open */
+  body.admin-modal-open {
+    overflow: hidden !important;
+  }
+
+  body.admin-modal-open header,
+  body.admin-modal-open footer,
+  body.admin-modal-open nav {
+    display: none !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+  }
+
   ::selection {
     @apply bg-nexa-blue/30 text-white;
   }
@@ -36,14 +49,14 @@
 
   .btn-primary {
     @apply relative px-6 py-3 rounded-xl font-semibold text-white overflow-hidden transition-all duration-300;
-    background: linear-gradient(90deg, #8B5CF6 0%, #EC4899 50%, #06B6D4 100%);
+    background: linear-gradient(90deg, #4F46E5 0%, #0D9488 100%);
     background-size: 200% 100%;
-    box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 4px 20px rgba(79, 70, 229, 0.35);
   }
 
   .btn-primary:hover {
     background-position: 100% 0;
-    box-shadow: 0 8px 30px rgba(139, 92, 246, 0.6), 0 0 20px rgba(236, 72, 153, 0.4);
+    box-shadow: 0 8px 28px rgba(79, 70, 229, 0.45), 0 0 16px rgba(13, 148, 136, 0.25);
     transform: translateY(-2px);
   }
 
@@ -91,6 +104,24 @@
 
   .section-padding {
     @apply py-16 sm:py-24 px-4;
+  }
+
+  .edu-card {
+    @apply bg-white/95 backdrop-blur-sm border border-slate-200 rounded-2xl shadow-lg;
+    box-shadow: 0 4px 24px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.06);
+  }
+
+  .quiz-focus-mode {
+    @apply relative;
+  }
+
+  .quiz-focus-mode::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(160deg, #f0f4ff 0%, #f8fafc 40%, #ecfdf5 100%);
+    z-index: -1;
+    pointer-events: none;
   }
 
   .gradient-border {

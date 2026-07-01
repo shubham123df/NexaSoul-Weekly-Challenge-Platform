@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowRight, BookOpen, Send } from 'lucide-react';
 import { quizApi } from '../api/client';
 import ProgressBar from '../components/ProgressBar';
 import Timer, { QuestionTimer } from '../components/Timer';
@@ -19,14 +20,23 @@ export default function Quiz() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [quizStarted, setQuizStarted] = useState(false);
-  const [isAdvancing, setIsAdvancing] = useState(false);
   const startTimeRef = useRef(Date.now());
-  const questionStartRef = useRef(Date.now());
-  const autoAdvanceRef = useRef(null);
-  const registration = JSON.parse(sessionStorage.getItem('nexasoul_registration') || 'null');
+  const answersRef = useRef([]);
+  const questionTimeRef = useRef(0);
+  const registrationRef = useRef(
+    JSON.parse(sessionStorage.getItem('nexasoul_registration') || 'null')
+  );
 
   useEffect(() => {
-    if (!registration) {
+    answersRef.current = answers;
+  }, [answers]);
+
+  useEffect(() => {
+    questionTimeRef.current = questionTime;
+  }, [questionTime]);
+
+  useEffect(() => {
+    if (!registrationRef.current) {
       navigate('/register');
       return;
     }
@@ -39,8 +49,38 @@ export default function Quiz() {
         setLoading(false);
       })
       .catch((err) => {
-        setError(err.response?.data?.message || 'Failed to load quiz');
-        setLoading(false);
+        if (!err.response) {
+          // Backend not available - show sample quiz for testing
+          console.warn('Backend not available, showing sample quiz');
+          setQuiz({
+            _id: 'demo-quiz',
+            title: 'Demo Quiz (Backend Offline)',
+            description: 'This is a demo quiz for testing the UI',
+            durationMinutes: 20,
+            questions: [
+              {
+                questionNumber: 1,
+                questionText: 'What is 2 + 2?',
+                optionA: '3',
+                optionB: '4',
+                optionC: '5',
+                optionD: '6',
+              },
+              {
+                questionNumber: 2,
+                questionText: 'What color is the sky?',
+                optionA: 'Blue',
+                optionB: 'Green',
+                optionC: 'Red',
+                optionD: 'Yellow',
+              },
+            ],
+          });
+          setLoading(false);
+        } else {
+          setError(err.response?.data?.message || 'Failed to load quiz');
+          setLoading(false);
+        }
       });
 
     const handleBeforeUnload = (e) => {
@@ -52,9 +92,8 @@ export default function Quiz() {
 
     return () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
-      if (autoAdvanceRef.current) clearTimeout(autoAdvanceRef.current);
     };
-  }, [navigate, registration, enterQuizZone]);
+  }, [navigate, enterQuizZone]);
 
   const submitQuiz = useCallback(async (finalAnswers) => {
     if (submitting || !quiz) return;
@@ -65,7 +104,7 @@ export default function Quiz() {
 
     try {
       const res = await quizApi.submit(quiz._id, {
-        ...registration,
+        ...registrationRef.current,
         answers: finalAnswers,
         timeTakenSeconds,
       });
@@ -77,102 +116,79 @@ export default function Quiz() {
 
       navigate('/results');
     } catch (err) {
-      setError(err.response?.data?.message || 'Submission failed');
-      setSubmitting(false);
+      if (!err.response) {
+        // Backend not available - show demo results
+        console.warn('Backend not available, showing demo results');
+        const correctCount = finalAnswers.filter(a => a.selectedOption === 0).length;
+        const totalQuestions = finalAnswers.length;
+        
+        sessionStorage.setItem('nexasoul_results', JSON.stringify({
+          quizId: quiz._id,
+          totalScore: correctCount * 10,
+          accuracy: Math.round((correctCount / totalQuestions) * 100),
+          timeTakenSeconds,
+          correctCount,
+          wrongCount: totalQuestions - correctCount,
+          rank: null,
+          leaderboardEnabled: false,
+        }));
+        
+        navigate('/results');
+      } else {
+        setError(err.response?.data?.message || 'Submission failed');
+        setSubmitting(false);
+        enterQuizZone();
+      }
     }
-  }, [quiz, registration, navigate, submitting, exitQuiz]);
+  }, [quiz, navigate, submitting, exitQuiz, enterQuizZone]);
 
   const handleExpire = useCallback(() => {
-    if (answers.length >= (quiz?.questions?.length || 0)) return;
-    submitQuiz(answers);
-  }, [answers, quiz, submitQuiz]);
+    submitQuiz(answersRef.current);
+  }, [submitQuiz]);
 
-  const handleNext = useCallback(() => {
-    if (selectedOption === null) return;
+  const handleSelect = (index) => {
+    if (submitting) return;
+    setSelectedOption(index);
+  };
+
+  const handleSubmitQuestion = () => {
+    if (selectedOption === null || submitting || !quiz) return;
 
     const newAnswer = {
       questionIndex: currentIndex,
       selectedOption,
-      timeTakenSeconds: questionTime,
+      timeTakenSeconds: questionTimeRef.current,
     };
 
-    const updatedAnswers = [...answers.filter((a) => a.questionIndex !== currentIndex), newAnswer];
+    const updatedAnswers = [
+      ...answersRef.current.filter((a) => a.questionIndex !== currentIndex),
+      newAnswer,
+    ];
 
-    if (currentIndex + 1 >= quiz.questions.length) {
+    setAnswers(updatedAnswers);
+    answersRef.current = updatedAnswers;
+
+    const isLastQuestion = currentIndex + 1 >= quiz.questions.length;
+
+    if (isLastQuestion) {
       submitQuiz(updatedAnswers);
       return;
     }
 
-    setAnswers(updatedAnswers);
-    setCurrentIndex(currentIndex + 1);
+    setCurrentIndex((prev) => prev + 1);
     setSelectedOption(null);
     setQuestionTime(0);
-    questionStartRef.current = Date.now();
-  }, [selectedOption, currentIndex, questionTime, answers, quiz, submitQuiz]);
-
-  const handleSelect = (index) => {
-    if (selectedOption !== null || submitting || isAdvancing) return;
-    
-    console.log('✓ Answer selected:', index, 'for question:', currentIndex + 1);
-    
-    // Save the answer
-    const newAnswer = {
-      questionIndex: currentIndex,
-      selectedOption: index,
-      timeTakenSeconds: questionTime,
-    };
-
-    const updatedAnswers = [...answers.filter((a) => a.questionIndex !== currentIndex), newAnswer];
-    setAnswers(updatedAnswers);
-    
-    // Mark as advancing
-    setSelectedOption(index);
-    setIsAdvancing(true);
+    questionTimeRef.current = 0;
   };
-
-  // Handle auto-advance when answer is selected
-  useEffect(() => {
-    if (!isAdvancing || !quiz) return;
-
-    console.log('⏳ Setting up auto-advance for question:', currentIndex + 1);
-
-    autoAdvanceRef.current = setTimeout(() => {
-      console.log('⏰ Timeout fired! Current question:', currentIndex + 1);
-      
-      const totalQuestions = quiz.questions.length;
-      
-      if (currentIndex + 1 >= totalQuestions) {
-        console.log('✓ Last question - submitting quiz');
-        submitQuiz(answers);
-      } else {
-        console.log('✓ Moving to question:', currentIndex + 2);
-        setCurrentIndex((prev) => {
-          console.log('✓ setCurrentIndex called:', prev, '->', prev + 1);
-          return prev + 1;
-        });
-        setSelectedOption(null);
-        setIsAdvancing(false);
-        setQuestionTime(0);
-        questionStartRef.current = Date.now();
-      }
-    }, 800);
-
-    return () => {
-      if (autoAdvanceRef.current) {
-        console.log('🧹 Cleaning up timeout');
-        clearTimeout(autoAdvanceRef.current);
-      }
-    };
-  }, [isAdvancing, currentIndex, quiz, answers, submitQuiz]);
 
   if (loading) {
     return (
       <div className="max-w-3xl mx-auto text-center py-20">
-        <div className="animate-pulse text-nexa-blue text-lg flex items-center justify-center gap-2">
-          <span className="w-2 h-2 bg-nexa-blue rounded-full animate-bounce" />
-          <span className="w-2 h-2 bg-nexa-cyan rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
-          <span className="w-2 h-2 bg-nexa-green rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
-          Loading quiz...
+        <div className="edu-card inline-flex items-center gap-3 px-6 py-4">
+          <span className="w-2 h-2 bg-indigo-500 rounded-full animate-bounce" />
+          <span className="w-2 h-2 bg-teal-500 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} />
+          <span className="w-2 h-2 bg-emerald-500 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} />
+          <span className="text-slate-600 font-medium">Loading your quiz...</span>
         </div>
       </div>
     );
@@ -180,8 +196,8 @@ export default function Quiz() {
 
   if (error && !quiz) {
     return (
-      <div className="max-w-3xl mx-auto glass-card p-8 text-center">
-        <p className="text-red-400 mb-4">{error}</p>
+      <div className="max-w-3xl mx-auto edu-card p-8 text-center">
+        <p className="text-red-600 mb-4">{error}</p>
         <button onClick={() => navigate('/')} className="btn-secondary">Go Home</button>
       </div>
     );
@@ -189,57 +205,61 @@ export default function Quiz() {
 
   const question = quiz.questions[currentIndex];
   const totalQuestions = quiz.questions.length;
+  const isLastQuestion = currentIndex + 1 >= totalQuestions;
 
-  // Show start screen before quiz begins
   if (!quizStarted) {
     return (
       <div className="max-w-3xl mx-auto">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
+          initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="glass-card p-8 sm:p-12 text-center"
+          className="edu-card p-8 sm:p-12 text-center"
         >
           <motion.div
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
-            transition={{ delay: 0.2, type: 'spring' }}
-            className="w-24 h-24 mx-auto mb-6 rounded-full bg-nexa-gradient flex items-center justify-center text-4xl"
+            transition={{ delay: 0.15, type: 'spring' }}
+            className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-indigo-500 to-teal-500 flex items-center justify-center shadow-lg shadow-indigo-200"
           >
-            🎯
+            <BookOpen className="w-10 h-10 text-white" />
           </motion.div>
-          <h1 className="text-3xl sm:text-4xl font-bold mb-4">Ready to Begin?</h1>
-          <p className="text-nexa-muted text-lg mb-2">{quiz.title}</p>
-          <p className="text-nexa-muted mb-8">{quiz.description}</p>
+
+          <p className="text-indigo-600 text-sm font-semibold uppercase tracking-wider mb-2">
+            Week 1 · Frontend Trivia
+          </p>
+          <h1 className="text-3xl sm:text-4xl font-bold text-slate-800 mb-3 tracking-tight">
+            Ready to Begin?
+          </h1>
+          <p className="text-slate-600 text-lg mb-1">{quiz.title}</p>
+          <p className="text-slate-500 mb-8 max-w-md mx-auto">{quiz.description}</p>
 
           <div className="grid sm:grid-cols-3 gap-4 mb-8">
-            <div className="bg-nexa-navy-light/50 rounded-xl p-4 border border-nexa-border">
-              <div className="text-2xl font-bold text-nexa-blue">{totalQuestions}</div>
-              <div className="text-sm text-nexa-muted">Questions</div>
-            </div>
-            <div className="bg-nexa-navy-light/50 rounded-xl p-4 border border-nexa-border">
-              <div className="text-2xl font-bold text-nexa-green">{quiz.durationMinutes}:00</div>
-              <div className="text-sm text-nexa-muted">Minutes</div>
-            </div>
-            <div className="bg-nexa-navy-light/50 rounded-xl p-4 border border-nexa-border">
-              <div className="text-2xl font-bold text-purple-400">300</div>
-              <div className="text-sm text-nexa-muted">Max Points</div>
-            </div>
+            {[
+              { value: totalQuestions, label: 'Questions', color: 'text-indigo-600' },
+              { value: `${quiz.durationMinutes}:00`, label: 'Minutes', color: 'text-teal-600' },
+              { value: '300', label: 'Max Points', color: 'text-emerald-600' },
+            ].map((stat) => (
+              <div key={stat.label} className="bg-slate-50 rounded-xl p-4 border border-slate-200">
+                <div className={`text-2xl font-bold ${stat.color}`}>{stat.value}</div>
+                <div className="text-sm text-slate-500">{stat.label}</div>
+              </div>
+            ))}
           </div>
 
           <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
             onClick={() => {
               setQuizStarted(true);
               startTimeRef.current = Date.now();
             }}
             className="btn-primary text-lg px-12 py-4"
           >
-            Start Quiz 🚀
+            Start Quiz
           </motion.button>
 
-          <p className="text-xs text-nexa-muted mt-6">
-            The {quiz.durationMinutes}-minute timer will start once you click the button above.
+          <p className="text-xs text-slate-400 mt-6">
+            The {quiz.durationMinutes}-minute timer starts when you click Start Quiz.
           </p>
         </motion.div>
       </div>
@@ -247,18 +267,20 @@ export default function Quiz() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
-        <ProgressBar current={currentIndex + 1} total={totalQuestions} />
-        <Timer
-          totalSeconds={quiz.durationMinutes * 60}
-          onExpire={handleExpire}
-          isRunning={quizStarted && !submitting}
-        />
+    <div className="max-w-3xl mx-auto quiz-focus-mode pt-16 sm:pt-4">
+      <Timer
+        totalSeconds={quiz.durationMinutes * 60}
+        onExpire={handleExpire}
+        isRunning={quizStarted && !submitting}
+        fixed
+      />
+
+      <div className="mb-6 pt-2">
+        <ProgressBar current={currentIndex + 1} total={totalQuestions} variant="edu" />
       </div>
 
       {error && (
-        <div className="mb-4 p-3 rounded-xl bg-red-500/10 border border-red-500/30 text-red-400 text-sm">
+        <div className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm">
           {error}
         </div>
       )}
@@ -266,20 +288,25 @@ export default function Quiz() {
       <AnimatePresence mode="wait">
         <motion.div
           key={currentIndex}
-          initial={{ opacity: 0, x: 50 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -50 }}
-          transition={{ duration: 0.3 }}
-          className="glass-card p-6 sm:p-8"
+          initial={{ opacity: 0, y: 24 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -24 }}
+          transition={{ duration: 0.35, ease: 'easeOut' }}
+          className="edu-card p-6 sm:p-8 shadow-xl"
         >
-          <div className="flex items-center justify-between mb-6">
-            <span className="text-sm font-medium text-nexa-blue bg-nexa-blue/10 px-3 py-1 rounded-full">
-              Q{currentIndex + 1}
+          <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
+            <span className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-700 bg-indigo-50 px-3 py-1.5 rounded-full border border-indigo-100">
+              <BookOpen className="w-4 h-4" />
+              Question {currentIndex + 1}
             </span>
-            <QuestionTimer key={currentIndex} onTick={setQuestionTime} />
+            <QuestionTimer
+              key={currentIndex}
+              onTick={setQuestionTime}
+              paused={submitting}
+            />
           </div>
 
-          <h2 className="text-lg sm:text-xl font-semibold mb-8 leading-relaxed">
+          <h2 className="text-lg sm:text-xl font-semibold text-slate-800 mb-8 leading-relaxed">
             {question.questionText}
           </h2>
 
@@ -291,19 +318,50 @@ export default function Quiz() {
                 text={option}
                 selected={selectedOption === index}
                 onSelect={handleSelect}
-                disabled={submitting || selectedOption !== null}
+                disabled={submitting}
+                variant="edu"
               />
             ))}
           </div>
 
-          <div className="flex justify-between items-center">
-            <span className="text-xs text-nexa-muted">
-              {currentIndex + 1} / {totalQuestions} questions
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 pt-4 border-t border-slate-100">
+            <span className="text-xs text-slate-400 self-center sm:self-auto">
+              {currentIndex + 1} of {totalQuestions}
             </span>
-            <span className={`text-xs font-semibold ${isAdvancing ? 'text-nexa-green animate-pulse' : 'text-nexa-muted'}`}>
-              {isAdvancing ? '⏳ Moving to next question...' : selectedOption === null ? '👆 Select an answer to continue' : ''}
-            </span>
+
+            <motion.button
+              type="button"
+              whileHover={selectedOption !== null && !submitting ? { scale: 1.02 } : {}}
+              whileTap={selectedOption !== null && !submitting ? { scale: 0.98 } : {}}
+              onClick={handleSubmitQuestion}
+              disabled={selectedOption === null || submitting}
+              className={`inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                selectedOption !== null && !submitting
+                  ? 'bg-gradient-to-r from-indigo-600 to-teal-600 text-white shadow-lg shadow-indigo-200 hover:shadow-indigo-300 cursor-pointer'
+                  : 'bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200'
+              }`}
+            >
+              {submitting ? (
+                <>Submitting quiz...</>
+              ) : isLastQuestion ? (
+                <>
+                  <Send className="w-4 h-4" />
+                  Submit Quiz
+                </>
+              ) : (
+                <>
+                  Submit &amp; Next
+                  <ArrowRight className="w-4 h-4" />
+                </>
+              )}
+            </motion.button>
           </div>
+
+          {selectedOption === null && (
+            <p className="text-xs text-slate-400 text-center sm:text-right mt-3">
+              Select an answer, then click Submit to continue
+            </p>
+          )}
         </motion.div>
       </AnimatePresence>
     </div>

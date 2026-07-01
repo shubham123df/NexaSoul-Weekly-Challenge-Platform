@@ -24,6 +24,22 @@ export default function Admin() {
   const [selectedSubmission, setSelectedSubmission] = useState(null);
   const [selectedSubmissions, setSelectedSubmissions] = useState([]);
 
+  // Hide navbar and footer when viewing submission details
+  useEffect(() => {
+    if (selectedSubmission) {
+      document.body.classList.add('admin-modal-open');
+      document.documentElement.classList.add('admin-modal-open');
+    } else {
+      document.body.classList.remove('admin-modal-open');
+      document.documentElement.classList.remove('admin-modal-open');
+    }
+
+    return () => {
+      document.body.classList.remove('admin-modal-open');
+      document.documentElement.classList.remove('admin-modal-open');
+    };
+  }, [selectedSubmission]);
+
   const loadQuizzes = async () => {
     try {
       const res = await adminApi.getQuizzes();
@@ -113,11 +129,11 @@ export default function Admin() {
     e.preventDefault();
     if (!selectedQuiz) return;
     try {
-      await adminApi.addQuestion(selectedQuiz._id, newQuestion);
+      await adminApi.addQuestion(selectedQuiz.id, newQuestion);
       setNewQuestion(emptyQuestion);
       const res = await adminApi.getQuizzes();
       setQuizzes(res.data);
-      setSelectedQuiz(res.data.find((q) => q._id === selectedQuiz._id));
+      setSelectedQuiz(res.data.find((q) => q.id === selectedQuiz.id));
       setMessage('Question added');
     } catch {
       setMessage('Failed to add question');
@@ -139,7 +155,7 @@ export default function Admin() {
   const handleUpdateQuiz = async (e) => {
     e.preventDefault();
     try {
-      await adminApi.updateQuiz(selectedQuiz._id, {
+      await adminApi.updateQuiz(selectedQuiz.id, {
         title: selectedQuiz.title,
         description: selectedQuiz.description,
         durationMinutes: selectedQuiz.durationMinutes,
@@ -265,7 +281,7 @@ export default function Admin() {
         {tab === 'quizzes' && (
           <motion.div key="quizzes" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="space-y-4">
             {quizzes.map((quiz) => (
-              <div key={quiz._id} className="glass-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div key={quiz.id} className="glass-card p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                 <div>
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold">{quiz.title}</h3>
@@ -279,12 +295,12 @@ export default function Admin() {
                 </div>
                 <div className="flex flex-wrap gap-2">
                   <button onClick={() => { setSelectedQuiz(quiz); setTab('questions'); }} className="btn-secondary text-xs py-2 px-3">Edit Questions</button>
-                  <button onClick={() => { setSelectedQuiz(quiz); loadSubmissions(quiz._id); setTab('submissions'); }} className="btn-secondary text-xs py-2 px-3">Submissions</button>
-                  <button onClick={() => { setSelectedQuiz(quiz); loadAnalytics(quiz._id); setTab('analytics'); }} className="btn-secondary text-xs py-2 px-3">Analytics</button>
-                  <button onClick={() => handleToggle(quiz._id)} className="btn-secondary text-xs py-2 px-3">
+                  <button onClick={() => { setSelectedQuiz(quiz); loadSubmissions(quiz.id); setTab('submissions'); }} className="btn-secondary text-xs py-2 px-3">Submissions</button>
+                  <button onClick={() => { setSelectedQuiz(quiz); loadAnalytics(quiz.id); setTab('analytics'); }} className="btn-secondary text-xs py-2 px-3">Analytics</button>
+                  <button onClick={() => handleToggle(quiz.id)} className="btn-secondary text-xs py-2 px-3">
                     {quiz.isActive ? 'Deactivate' : 'Activate'}
                   </button>
-                  <button onClick={() => handleDelete(quiz._id)} className="text-xs py-2 px-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10">Delete</button>
+                  <button onClick={() => handleDelete(quiz.id)} className="text-xs py-2 px-3 rounded-xl border border-red-500/30 text-red-400 hover:bg-red-500/10">Delete</button>
                 </div>
               </div>
             ))}
@@ -317,10 +333,10 @@ export default function Admin() {
                     <div className="text-xs text-nexa-muted mt-1">Correct: Option {String.fromCharCode(65 + q.correctAnswer)}</div>
                     <button
                       onClick={async () => {
-                        await adminApi.deleteQuestion(selectedQuiz._id, i);
+                        await adminApi.deleteQuestion(selectedQuiz.id, i);
                         const res = await adminApi.getQuizzes();
                         setQuizzes(res.data);
-                        setSelectedQuiz(res.data.find((qu) => qu._id === selectedQuiz._id));
+                        setSelectedQuiz(res.data.find((qu) => qu.id === selectedQuiz.id));
                       }}
                       className="text-xs text-red-400 mt-2 hover:underline"
                     >
@@ -382,7 +398,7 @@ export default function Admin() {
                     <div className="grid sm:grid-cols-3 gap-4">
                       {submissions.slice(0, 3).map((sub, i) => (
                         <div
-                          key={sub._id}
+                          key={sub.id}
                           className={`p-4 rounded-xl border ${
                             i === 0 ? 'bg-yellow-500/10 border-yellow-500/30' :
                             i === 1 ? 'bg-gray-400/10 border-gray-400/30' :
@@ -417,7 +433,7 @@ export default function Admin() {
                   <div className="space-y-3 max-h-[600px] overflow-y-auto">
                     {submissions.map((sub) => (
                       <div
-                        key={sub._id}
+                        key={sub.id}
                         className="bg-nexa-navy-light/50 rounded-xl p-4 border border-nexa-border hover:border-nexa-blue/30 transition-all"
                       >
                         <div className="flex items-start justify-between gap-4">
@@ -425,8 +441,8 @@ export default function Admin() {
                             <div className="flex items-center gap-2 mb-1">
                               <input
                                 type="checkbox"
-                                checked={selectedSubmissions.includes(sub._id)}
-                                onChange={() => toggleSelectSubmission(sub._id)}
+                                checked={selectedSubmissions.includes(sub.id)}
+                                onChange={() => toggleSelectSubmission(sub.id)}
                                 className="w-4 h-4 cursor-pointer"
                               />
                               <span className="font-semibold text-nexa-white">{sub.name}</span>
@@ -468,8 +484,13 @@ export default function Admin() {
 
         {/* Submission Details Modal */}
         {selectedSubmission && (
-          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} className="glass-card p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+          <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center z-[100] p-4 overflow-hidden">
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              className="glass-card p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-bold">Submission Details</h2>
                 <button
@@ -548,8 +569,8 @@ export default function Admin() {
                 </div>
 
                 <div className="flex gap-3 mb-6">
-                  <button onClick={() => handleExport(selectedQuiz._id, 'csv')} className="btn-secondary text-sm">Export CSV</button>
-                  <button onClick={() => handleExport(selectedQuiz._id, 'excel')} className="btn-secondary text-sm">Export Excel</button>
+                  <button onClick={() => handleExport(selectedQuiz.id, 'csv')} className="btn-secondary text-sm">Export CSV</button>
+                  <button onClick={() => handleExport(selectedQuiz.id, 'excel')} className="btn-secondary text-sm">Export Excel</button>
                 </div>
 
                 <div className="glass-card p-6">

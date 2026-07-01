@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { Clock } from 'lucide-react';
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -7,72 +8,109 @@ function formatTime(seconds) {
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
 
-export default function Timer({ totalSeconds, onExpire, isRunning = true }) {
+export default function Timer({ totalSeconds, onExpire, isRunning = true, fixed = false }) {
   const [remaining, setRemaining] = useState(totalSeconds);
+  const expiredRef = useRef(false);
+  const onExpireRef = useRef(onExpire);
 
   useEffect(() => {
-    console.log('⏱️ Timer initialized/reset to:', totalSeconds, 'seconds');
+    onExpireRef.current = onExpire;
+  }, [onExpire]);
+
+  useEffect(() => {
     setRemaining(totalSeconds);
+    expiredRef.current = false;
   }, [totalSeconds]);
 
   useEffect(() => {
-    console.log('⏱️ Timer useEffect - isRunning:', isRunning, 'remaining:', remaining);
-    
-    if (!isRunning || remaining <= 0) {
-      console.log('⏱️ Timer NOT running');
-      return;
-    }
+    if (!isRunning) return;
 
-    console.log('⏱️ Starting countdown interval...');
     const interval = setInterval(() => {
       setRemaining((prev) => {
         if (prev <= 1) {
-          console.log('⏱️ Timer reached 0');
+          if (!expiredRef.current) {
+            expiredRef.current = true;
+            onExpireRef.current?.();
+          }
           return 0;
         }
         return prev - 1;
       });
     }, 1000);
 
-    return () => {
-      console.log('⏱️ Clearing interval');
-      clearInterval(interval);
-    };
-  }, [isRunning, remaining, onExpire]);
+    return () => clearInterval(interval);
+  }, [isRunning]);
 
-  // Call onExpire when timer reaches 0
-  useEffect(() => {
-    if (remaining === 0 && isRunning) {
-      console.log('⏱️ Calling onExpire!');
-      onExpire?.();
-    }
-  }, [remaining, isRunning, onExpire]);
+  const isWarning = remaining <= 300 && remaining > 60;
+  const isCritical = remaining <= 60;
 
-  const isLow = remaining <= 60;
-  const isCritical = remaining <= 30;
+  const borderClass = isCritical
+    ? 'border-red-400/60 bg-red-50/90'
+    : isWarning
+    ? 'border-amber-400/60 bg-amber-50/90'
+    : 'border-indigo-200 bg-white/95';
 
-  return (
+  const textClass = isCritical
+    ? 'text-red-600'
+    : isWarning
+    ? 'text-amber-600'
+    : 'text-indigo-700';
+
+  const iconClass = isCritical
+    ? 'text-red-500'
+    : isWarning
+    ? 'text-amber-500'
+    : 'text-indigo-500';
+
+  const timerContent = (
     <motion.div
-      animate={isCritical ? { scale: [1, 1.05, 1] } : {}}
+      animate={isCritical ? { scale: [1, 1.04, 1] } : {}}
       transition={{ repeat: isCritical ? Infinity : 0, duration: 1 }}
-      className={`glass-card px-4 py-2 flex items-center gap-2 ${
-        isCritical ? 'border-red-500/50' : isLow ? 'border-yellow-500/50' : 'border-nexa-blue/30'
+      className={`flex items-center gap-2.5 px-4 py-2.5 rounded-xl border shadow-md backdrop-blur-sm ${borderClass} ${
+        fixed ? 'shadow-lg' : ''
       }`}
+      role="timer"
+      aria-live="polite"
+      aria-label={`Time remaining: ${formatTime(remaining)}`}
     >
-      <svg className="w-5 h-5 text-nexa-blue" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-      </svg>
-      <span className={`font-mono font-bold text-lg ${isCritical ? 'text-red-400' : isLow ? 'text-yellow-400' : 'text-nexa-white'}`}>
-        {formatTime(remaining)}
-      </span>
+      <Clock className={`w-5 h-5 shrink-0 ${iconClass}`} />
+      <div>
+        <div className="text-[10px] uppercase tracking-wider text-slate-500 font-medium leading-none mb-0.5">
+          Time Left
+        </div>
+        <span className={`font-mono font-bold text-xl leading-none ${textClass}`}>
+          {formatTime(remaining)}
+        </span>
+      </div>
+      {isWarning && (
+        <span className={`text-xs font-semibold hidden sm:inline ${isCritical ? 'text-red-500' : 'text-amber-600'}`}>
+          {isCritical ? 'Hurry!' : '< 5 min'}
+        </span>
+      )}
     </motion.div>
   );
+
+  if (fixed) {
+    return (
+      <div className="fixed top-4 right-4 z-50">
+        {timerContent}
+      </div>
+    );
+  }
+
+  return timerContent;
 }
 
-export function QuestionTimer({ onTick }) {
+export function QuestionTimer({ onTick, paused = false }) {
   const [seconds, setSeconds] = useState(0);
 
   useEffect(() => {
+    setSeconds(0);
+  }, []);
+
+  useEffect(() => {
+    if (paused) return;
+
     const interval = setInterval(() => {
       setSeconds((prev) => {
         const next = prev + 1;
@@ -80,20 +118,23 @@ export function QuestionTimer({ onTick }) {
         return next;
       });
     }, 1000);
+
     return () => clearInterval(interval);
-  }, [onTick]);
+  }, [onTick, paused]);
 
   const bonusText =
-    seconds <= 5 ? '+5 bonus available!' : seconds <= 10 ? '+3 bonus available!' : 'No speed bonus';
+    seconds <= 5 ? '+5 speed bonus' : seconds <= 10 ? '+3 speed bonus' : 'No speed bonus';
 
   const bonusColor =
-    seconds <= 5 ? 'text-nexa-green' : seconds <= 10 ? 'text-yellow-400' : 'text-nexa-muted';
+    seconds <= 5 ? 'text-emerald-600' : seconds <= 10 ? 'text-teal-600' : 'text-slate-400';
 
   return (
-    <div className="text-sm">
-      <span className="text-nexa-muted">Time on question: </span>
-      <span className="font-mono font-semibold">{seconds}s</span>
-      <span className={`ml-3 ${bonusColor}`}>{bonusText}</span>
+    <div className="text-sm flex items-center gap-2 flex-wrap justify-end">
+      <span className="text-slate-500">Question time:</span>
+      <span className="font-mono font-semibold text-indigo-700">{seconds}s</span>
+      <span className={`text-xs font-medium px-2 py-0.5 rounded-full bg-slate-100 ${bonusColor}`}>
+        {bonusText}
+      </span>
     </div>
   );
 }

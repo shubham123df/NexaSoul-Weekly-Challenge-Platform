@@ -1,8 +1,42 @@
 import { motion } from 'framer-motion';
+import { Check } from 'lucide-react';
 
 const labels = ['A', 'B', 'C', 'D'];
 
-export default function OptionButton({ index, text, selected, onSelect, disabled }) {
+export default function OptionButton({ index, text, selected, onSelect, disabled, variant = 'default' }) {
+  const isEdu = variant === 'edu';
+
+  if (isEdu) {
+    return (
+      <motion.button
+        initial={false}
+        animate={selected ? { scale: 1.01 } : { scale: 1 }}
+        whileHover={!disabled ? { scale: 1.01 } : {}}
+        whileTap={!disabled ? { scale: 0.99 } : {}}
+        onClick={() => !disabled && onSelect(index)}
+        disabled={disabled}
+        className={`w-full text-left p-4 rounded-xl border-2 transition-all duration-300 flex items-center gap-4 ${
+          selected
+            ? 'border-indigo-500 bg-indigo-50 shadow-md shadow-indigo-100'
+            : 'border-slate-200 bg-white hover:border-teal-300 hover:bg-teal-50/50'
+        } ${disabled && !selected ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
+      >
+        <span
+          className={`w-10 h-10 rounded-lg flex items-center justify-center font-bold text-sm shrink-0 transition-colors ${
+            selected
+              ? 'bg-indigo-600 text-white'
+              : 'bg-slate-100 text-slate-600'
+          }`}
+        >
+          {selected ? <Check className="w-5 h-5" /> : labels[index]}
+        </span>
+        <span className={`text-sm sm:text-base flex-1 ${selected ? 'font-medium text-slate-800' : 'text-slate-700'}`}>
+          {text}
+        </span>
+      </motion.button>
+    );
+  }
+
   return (
     <motion.button
       initial={false}
@@ -17,7 +51,6 @@ export default function OptionButton({ index, text, selected, onSelect, disabled
           : 'border-nexa-border bg-nexa-card/50 hover:border-nexa-green/40 hover:bg-nexa-green/5'
       } ${disabled ? 'opacity-70 cursor-not-allowed' : 'cursor-pointer'}`}
     >
-      {/* Shine sweep on hover */}
       {!disabled && !selected && (
         <div className="absolute inset-0 -translate-x-full group-hover:animate-shine bg-gradient-to-r from-transparent via-white/10 to-transparent" />
       )}

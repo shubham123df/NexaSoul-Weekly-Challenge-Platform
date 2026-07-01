@@ -1,6 +1,6 @@
 import express from 'express';
-import Submission from '../models/Submission.js';
-import Quiz from '../models/Quiz.js';
+import * as quizQueries from '../models/quizQueries.js';
+import * as submissionQueries from '../models/submissionQueries.js';
 import XLSX from 'xlsx';
 import { adminAuth } from '../middleware/adminAuth.js';
 
@@ -8,10 +8,10 @@ const router = express.Router();
 
 router.get('/:quizId', adminAuth, async (req, res) => {
   try {
-    const quiz = await Quiz.findById(req.params.quizId);
+    const quiz = await quizQueries.getFullQuizById(req.params.quizId);
     if (!quiz) return res.status(404).json({ message: 'Quiz not found' });
 
-    const submissions = await Submission.find({ quizId: req.params.quizId });
+    const submissions = await submissionQueries.getSubmissionsByQuizId(req.params.quizId);
     const totalParticipants = submissions.length;
     const averageScore = totalParticipants
       ? Math.round(submissions.reduce((s, sub) => s + sub.totalScore, 0) / totalParticipants)
@@ -20,18 +20,27 @@ router.get('/:quizId', adminAuth, async (req, res) => {
       ? Math.max(...submissions.map((s) => s.totalScore))
       : 0;
 
-    const questionStats = quiz.questions.map((q, index) => {
+    // Get all answers for all submissions
+    const allAnswers = await Promise.all(
+      submissions.map(async (sub) => {
+        return await submissionQueries.getSubmissionAnswers(sub.id);
+      })
+    );
+
+    const questionStats = quiz.questions.map((q) => {
       let correct = 0;
       let attempted = 0;
-      submissions.forEach((sub) => {
-        const ans = sub.answers.find((a) => a.questionIndex === index);
+      
+      allAnswers.forEach((answers) => {
+        const ans = answers.find((a) => a.questionIndex === q.questionNumber - 1);
         if (ans) {
           attempted++;
           if (ans.isCorrect) correct++;
         }
       });
+      
       return {
-        questionNumber: index + 1,
+        questionNumber: q.questionNumber,
         questionText: q.questionText,
         attempted,
         correct,
@@ -53,7 +62,7 @@ router.get('/:quizId', adminAuth, async (req, res) => {
 
 router.get('/:quizId/export/csv', adminAuth, async (req, res) => {
   try {
-    const submissions = await Submission.find({ quizId: req.params.quizId }).sort({ totalScore: -1 });
+    const submissions = await submissionQueries.getSubmissionsByQuizId(req.params.quizId);
     const headers = ['Name', 'UID', 'Email', 'Department', 'Year', 'Score', 'Time Taken (seconds)', 'Accuracy'];
     const rows = submissions.map((s) => [
       s.name,
@@ -78,7 +87,7 @@ router.get('/:quizId/export/csv', adminAuth, async (req, res) => {
 
 router.get('/:quizId/export/excel', adminAuth, async (req, res) => {
   try {
-    const submissions = await Submission.find({ quizId: req.params.quizId }).sort({ totalScore: -1 });
+    const submissions = await submissionQueries.getSubmissionsByQuizId(req.params.quizId);
     const data = submissions.map((s) => ({
       Name: s.name,
       UID: s.uid,
