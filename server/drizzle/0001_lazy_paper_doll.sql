@@ -1,0 +1,1 @@
+ALTER TABLE "quizzes" ADD COLUMN "poster_url" text DEFAULT '';

@@ -1,0 +1,38 @@
+# Backend API
+services:
+  - type: web
+    name: nexasoul-quiz-api
+    env: node
+    region: oregon
+    plan: free
+    rootDir: server
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: nexasoul-db
+          property: connectionString
+      - key: ADMIN_SECRET
+        value: nexasoul-admin-2026
+        sync: false
+      - key: CLIENT_URL
+        value: https://nexasoul-quiz-frontend.onrender.com
+
+  # Frontend (Static Site)
+  - type: web
+    name: nexasoul-quiz-frontend
+    env: static
+    rootDir: client
+    buildCommand: npm install --production=false && VITE_API_URL=https://nexasoul-quiz-api.onrender.com/api npm run build
+    staticPublishPath: dist
+
+databases:
+  - name: nexasoul-db
+    databaseName: nexasoul_quiz
+    plan: free

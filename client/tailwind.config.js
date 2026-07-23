@@ -1,0 +1,166 @@
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
+  darkMode: 'class',
+  theme: {
+    extend: {
+      colors: {
+        primary: {
+          DEFAULT: '#FF4D7E',
+          50: '#FFF1F6',
+          100: '#FFE5ED',
+          200: '#FFA8C4',
+          300: '#FF7BA0',
+          400: '#FF4D7E',
+          500: '#FF4D7E',
+          600: '#E63B68',
+          700: '#D42A56',
+          800: '#B81E44',
+          900: '#9A1836',
+          950: '#7A1229',
+        },
+        secondary: {
+          DEFAULT: '#0B1B3D',
+          light: '#1A3A5C',
+          lighter: '#2A4A7C',
+        },
+        accent: {
+          blue: '#2D5BFF',
+          yellow: '#FFD029',
+          lime: '#B7E546',
+          cyan: '#06B6D4',
+          darkPanels: '#0E0E20',
+        },
+        background: {
+          DEFAULT: '#FCFBF8',
+          50: '#FCFBF8',
+          100: '#FAF9F6',
+          200: '#F7F5F2',
+        },
+        surface: {
+          DEFAULT: '#FFFFFF',
+          50: '#FAFAF8',
+          100: '#F5F3F1',
+          cream: '#FCFBF8',
+        },
+        text: {
+          DEFAULT: '#0B1B3D',
+          50: '#475569',
+          100: '#64748B',
+          200: '#94A3B8',
+        },
+        border: {
+          DEFAULT: '#E8E4DF',
+          50: '#F5F2EE',
+          100: '#EDE8E2',
+        },
+        glass: {
+          DEFAULT: 'rgba(252, 251, 248, 0.9)',
+          light: 'rgba(252, 251, 248, 0.7)',
+          dark: 'rgba(252, 251, 248, 0.95)',
+        },
+      },
+      backgroundImage: {
+        'gradient-primary': 'linear-gradient(135deg, #FF4D7E 0%, #FF4D7E 50%, #FFD029 100%)',
+        'gradient-blue-yellow': 'linear-gradient(135deg, #2D5BFF 0%, #FFD029 100%)',
+        'gradient-navy-pink': 'linear-gradient(135deg, #0B1B3D 0%, #FF4D7E 100%)',
+        'gradient-hero': 'radial-gradient(ellipse at 20% 20%, rgba(255, 77, 126, 0.08) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(45, 91, 255, 0.06) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, rgba(183, 229, 70, 0.04) 0%, transparent 60%)',
+        'gradient-mesh': 'linear-gradient(135deg, rgba(255, 77, 126, 0.06) 0%, rgba(45, 91, 255, 0.04) 100%)',
+        'gradient-shimmer': 'linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.4) 50%, transparent 100%)',
+        'gradient-radial': 'radial-gradient(circle, var(--tw-gradient-stops))',
+      },
+      fontFamily: {
+        sans: ['Inter', 'DM Sans', 'system-ui', 'sans-serif'],
+        display: ['Archivo Black', 'Bricolage Grotesque', 'system-ui', 'sans-serif'],
+      },
+      animation: {
+        'float': 'float 6s ease-in-out infinite',
+        'float-delayed': 'float 6s ease-in-out 3s infinite',
+        'pulse-slow': 'pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+        'gradient-x': 'gradient-x 8s ease infinite',
+        'gradient-y': 'gradient-y 8s ease infinite',
+        'blob': 'blob 15s infinite',
+        'blob-delayed': 'blob 15s infinite 5s',
+        'blob-delayed-2': 'blob 15s infinite 10s',
+        'shimmer': 'shimmer 2s linear infinite',
+        'fade-in': 'fade-in 0.5s ease-out',
+        'slide-up': 'slide-up 0.5s ease-out',
+        'scale-in': 'scale-in 0.3s ease-out',
+        'glow': 'glow 2s ease-in-out infinite',
+        'border-glow': 'border-glow 3s ease-in-out infinite',
+        'text-gradient': 'text-gradient 3s ease infinite',
+        'typing': 'typing 3s steps(20) infinite',
+      },
+      keyframes: {
+        float: {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-20px)' },
+        },
+        'gradient-x': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        'gradient-y': {
+          '0%, 100%': { backgroundPosition: '50% 0%' },
+          '50%': { backgroundPosition: '50% 100%' },
+        },
+        blob: {
+          '0%, 100%': { transform: 'translate(0, 0) scale(1)' },
+          '33%': { transform: 'translate(30px, -50px) scale(1.1)' },
+          '66%': { transform: 'translate(-20px, 20px) scale(0.9)' },
+        },
+        shimmer: {
+          '0%': { backgroundPosition: '-200% center' },
+          '100%': { backgroundPosition: '200% center' },
+        },
+        'fade-in': {
+          '0%': { opacity: '0' },
+          '100%': { opacity: '1' },
+        },
+        'slide-up': {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        'scale-in': {
+          '0%': { opacity: '0', transform: 'scale(0.9)' },
+          '100%': { opacity: '1', transform: 'scale(1)' },
+        },
+        glow: {
+          '0%, 100%': { boxShadow: '0 0 20px rgba(37, 99, 235, 0.3)' },
+          '50%': { boxShadow: '0 0 40px rgba(37, 99, 235, 0.5), 0 0 60px rgba(6, 182, 212, 0.3)' },
+        },
+        'border-glow': {
+          '0%, 100%': { borderColor: 'rgba(37, 99, 235, 0.3)' },
+          '50%': { borderColor: 'rgba(6, 182, 212, 0.5)' },
+        },
+        'text-gradient': {
+          '0%, 100%': { backgroundPosition: '0% 50%' },
+          '50%': { backgroundPosition: '100% 50%' },
+        },
+        typing: {
+          '0%, 100%': { width: '0' },
+          '50%': { width: '100%' },
+        },
+      },
+      boxShadow: {
+        'glass': '0 8px 32px 0 rgba(11, 27, 61, 0.05)',
+        'glass-lg': '0 12px 48px 0 rgba(11, 27, 61, 0.08)',
+        'glow': '0 0 40px rgba(255, 77, 126, 0.25)',
+        'glow-lg': '0 0 60px rgba(255, 77, 126, 0.3)',
+        'glow-blue': '0 0 40px rgba(45, 91, 255, 0.25)',
+        'glow-yellow': '0 0 40px rgba(255, 208, 41, 0.2)',
+        'glow-lime': '0 0 40px rgba(183, 229, 70, 0.2)',
+        'glow-navy': '0 0 40px rgba(11, 27, 61, 0.15)',
+        'premium': '0 4px 24px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02)',
+        'premium-lg': '0 8px 32px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.02)',
+        'soft': '0 4px 12px rgba(11, 27, 61, 0.08)',
+        'badge': '0 2px 8px rgba(11, 27, 61, 0.12)',
+      },
+      backdropBlur: {
+        'glass': '12px',
+        'glass-lg': '16px',
+      },
+    },
+  },
+  plugins: [],
+};
