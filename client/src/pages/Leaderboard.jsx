@@ -50,7 +50,7 @@ export default function Leaderboard() {
 
   return (
 
-    <div className="w-full px-4 sm:px-6 lg:px-8">
+    <div className="max-w-3xl mx-auto">
 
       <div className="hidden sm:block">
         <motion.div

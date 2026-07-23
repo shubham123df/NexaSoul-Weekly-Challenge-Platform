@@ -87,7 +87,7 @@ export default function Register() {
   };
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8">
+    <div className="max-w-4xl mx-auto">
       <div className="grid lg:grid-cols-5 gap-8 items-start">
         
         {/* Left decorative section */}

@@ -90,7 +90,7 @@ export default function Review() {
   }
 
   return (
-    <div className="w-full px-4 sm:px-6 lg:px-8 hide-navbar-scroll pt-24">
+    <div className="max-w-4xl mx-auto hide-navbar-scroll pt-24">
         {/* Centered review section */}
         <div className="w-full">
           <motion.div

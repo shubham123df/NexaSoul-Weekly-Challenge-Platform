@@ -84,7 +84,7 @@ export default function Results() {
 
   return (
 
-    <div className="w-full px-4 sm:px-6 lg:px-8 pt-24">
+    <div className="max-w-5xl mx-auto pt-24">
       <div className="grid lg:grid-cols-5 gap-8 items-start">
         
         {/* Left decorative section */}
