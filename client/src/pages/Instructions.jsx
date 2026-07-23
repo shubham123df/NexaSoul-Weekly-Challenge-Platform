@@ -111,7 +111,7 @@ export default function Instructions() {
 
   return (
 
-    <div className="max-w-5xl mx-auto">
+    <div className="w-full px-4 sm:px-6 lg:px-8">
       <div className="grid lg:grid-cols-5 gap-8 items-start">
         
         {/* Left decorative section */}

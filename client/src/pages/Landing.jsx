@@ -264,7 +264,7 @@ export default function Landing() {
 
         {/* Main content - Split-screen layout */}
 
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-28">
+        <div className="relative z-10 w-full px-4 sm:px-6 lg:px-8 py-16 sm:py-20 lg:py-28">
           
           <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
             
@@ -590,7 +590,7 @@ export default function Landing() {
 
         >
 
-          <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="w-full px-4 sm:px-6 lg:px-8">
 
           <motion.div variants={itemVariants} className="text-center mb-4">
 

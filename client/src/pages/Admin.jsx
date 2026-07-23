@@ -290,7 +290,7 @@ export default function Admin() {
   }
 
   return (
-    <div className="max-w-6xl mx-auto pt-20">
+    <div className="w-full px-4 sm:px-6 lg:px-8 pt-20">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold text-black">Admin Dashboard</h1>
